@@ -12,6 +12,13 @@ from six.moves import range  # pylint: disable=redefined-builtin
 # import tensorflow.compat.v1 as tf
 # from tensorflow.contrib import slim as contrib_slim
 
+def latent_loss(mean,sd,mul):
+    mean2=mean*mean
+    sd2=sd*sd
+    loss=mul*torch.mean(mean2+sd2-torch.log(sd2)-1)
+    fll=float(torch.mean(mean2+sd2-torch.log(sd2)-1))
+    return loss,fll
+
 def norm(audio):
 	rawaudio=torchaudio.transforms.MuLawEncoding()(audio)
 	rawaudio=rawaudio.type(torch.FloatTensor)
@@ -25,8 +32,16 @@ def denorm(audio,min,max):
 	rawaudio=(audio*(max-min))+min
 	rawaudio=torchaudio.transforms.MuLawDecoding()(rawaudio)
 	return rawaudio
-
-
+def latent_lossp(mean,sd,mul):
+    l1,f1=latent_loss(mean[0],sd[0],mul)
+    l2,f2=latent_loss(mean[1],sd[1],mul)
+    l3,f3=latent_loss(mean[2],sd[2],mul)
+    l4,f4=latent_loss(mean[3],sd[3],mul)
+    return l1+l2+l3+l4,f1+f2+f3+f4
+def upsample(x,rate=2):
+    return np.interp(np.linspace(0,len(x),rate*len(x)),np.linspace(0,len(x),len(x)),x)
+def downsample(x,rate=2):
+    return x[::rate]
 def myspec(x):
 		spec=specgram(x,
 			n_fft=1024,
